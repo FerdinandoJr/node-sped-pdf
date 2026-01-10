@@ -39,7 +39,7 @@ const DANFe = async (data: { xml?: string, consulta?: string, logo?: any | null,
         consulta.retConsSitNFe.procEventoNFe = Array.isArray(consulta.retConsSitNFe.procEventoNFe) ? consulta.retConsSitNFe.procEventoNFe : [consulta.retConsSitNFe.procEventoNFe];
 
     if (xml.nfeProc) {
-        xml = xml.nfeProc;
+        xml = xml.nfeProc;    
     }
 
     //Configuração do PDF
@@ -420,7 +420,7 @@ const DANFe = async (data: { xml?: string, consulta?: string, logo?: any | null,
 
     async function bloco3(page = PDF.pages[(PDF.pages.length - 1)]) {
         let IndexX = 0, contL = 0;
-        if (xml.NFe.infNFe.cobr != undefined) {
+        if (xml.NFe.infNFe?.cobr?.dup != undefined) {
             addTXT({ page, text: "FATURA / DUPLICATA", x: 3, y: PDF.mtBlock, maxWidth: PDF.width * 0.25, fontStyle: "negrito" });
 
             if (Array.isArray(xml.NFe.infNFe.cobr.dup) && xml.NFe.infNFe.cobr.dup.length > 14) { //Muitas duplicatas
@@ -429,6 +429,7 @@ const DANFe = async (data: { xml?: string, consulta?: string, logo?: any | null,
                 IndexX += 0.25;
             } else {
                 const cobrDup = Array.isArray(xml.NFe.infNFe.cobr.dup) ? xml.NFe.infNFe.cobr.dup : [xml.NFe.infNFe.cobr.dup];
+                console.log(cobrDup)
                 for (const [index, dup] of cobrDup.entries()) {
                     addRet(page, PDF.width * IndexX, PDF.mtBlock + 8 + (contL * 22), PDF.width * 0.1428, 20);
 

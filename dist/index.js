@@ -303,7 +303,7 @@ var DANFe = async (data = {}) => {
   }
   async function bloco3(page = PDF.pages[PDF.pages.length - 1]) {
     let IndexX = 0, contL = 0;
-    if (xml.NFe.infNFe.cobr != void 0) {
+    if (xml.NFe.infNFe?.cobr?.dup != void 0) {
       addTXT({ page, text: "FATURA / DUPLICATA", x: 3, y: PDF.mtBlock, maxWidth: PDF.width * 0.25, fontStyle: "negrito" });
       if (Array.isArray(xml.NFe.infNFe.cobr.dup) && xml.NFe.infNFe.cobr.dup.length > 14) {
         addRet(page, PDF.width * IndexX, PDF.mtBlock + 8 + contL * 22, PDF.width, 20);
@@ -311,6 +311,7 @@ var DANFe = async (data = {}) => {
         IndexX += 0.25;
       } else {
         const cobrDup = Array.isArray(xml.NFe.infNFe.cobr.dup) ? xml.NFe.infNFe.cobr.dup : [xml.NFe.infNFe.cobr.dup];
+        console.log(cobrDup);
         for (const [index, dup] of cobrDup.entries()) {
           addRet(page, PDF.width * IndexX, PDF.mtBlock + 8 + contL * 22, PDF.width * 0.1428, 20);
           addTXT({ page, text: "Num.", x: PDF.width * IndexX + 1, y: PDF.mtBlock + 8 + contL * 22, maxWidth: PDF.width * 0.1458 });
