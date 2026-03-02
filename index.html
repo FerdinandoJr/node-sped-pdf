@@ -55,32 +55,45 @@
 
     <div class="controls">
         <textarea id="xmlBruto" placeholder="Cole o XML da nota aqui..."></textarea>
-        <button id="btnGerar">Gerar PDF</button>
+        <div style="display: flex; gap: 10px;">
+            <button id="btnGerar" style="flex: 1;">Gerar DANFe</button>
+            <button id="btnDacte" style="flex: 1; background: #28a745;">Gerar DACTE</button>
+        </div>
     </div>
 
     <div id="container">
         <iframe id="meuIframe"></iframe>
     </div>
 
-<script type="module">
-        // Se instalou via npm:
-        import { DANFe } from 'node-sped-pdf'; 
-        
-        // Se está editando dentro do próprio projeto clonado:
-        // import { DANFe } from './src/index.ts';
+    <script type="module">
+        import { DANFe, DACTE } from './src/index.ts';
+
+        async function renderPDF(res) {
+            const blob = new Blob([res], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            document.getElementById('meuIframe').src = url;
+        }
 
         document.getElementById('btnGerar').addEventListener('click', async () => {
             const xml = document.getElementById('xmlBruto').value;
             if (!xml) return;
-
             try {
-                // A biblioteca espera uma STRING de XML
                 const res = await DANFe({ xml });
-                
-                const blob = new Blob([res], { type: 'application/pdf' });
-                const url = URL.createObjectURL(blob);
-                document.getElementById('meuIframe').src = url;
+                await renderPDF(res);
             } catch (err) {
+                alert("Erro ao gerar DANFe: " + err.message);
+                console.error(err);
+            }
+        });
+
+        document.getElementById('btnDacte').addEventListener('click', async () => {
+            const xml = document.getElementById('xmlBruto').value;
+            if (!xml) return;
+            try {
+                const res = await DACTE({ xml });
+                await renderPDF(res);
+            } catch (err) {
+                alert("Erro ao gerar DACTE: " + err.message);
                 console.error(err);
             }
         });
