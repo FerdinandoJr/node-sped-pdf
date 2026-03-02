@@ -1,58 +1,89 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
-    <title>Teste Browser</title>
+    <title>Teste Browser - Gerador DANFe</title>
     <style>
-        html,
-        body {
+        * { box-sizing: border-box; } /* Garante que padding não quebre o layout */
+        
+        body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            box-sizing: border-box;
+            font-family: sans-serif;
         }
 
-        #container {
-            display: flex;
-            height: 90vh;
-        }
-
-        textarea,
-        iframe {
-            width: 100vh;
-            height: 100vh;
-            border: none;
-            resize: none;
+        .controls {
             padding: 10px;
-            font-size: 16px;
+            background: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 40vh; /* Ajustado para dar espaço ao iframe */
         }
 
         textarea {
-            border-right: 1px solid #ccc;
+            flex-grow: 1;
+            resize: none;
+            padding: 10px;
+            font-family: monospace;
+            border: 1px solid #ccc;
+        }
+
+        #container {
+            height: 60vh;
+            border-top: 2px solid #333;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        button {
+            padding: 10px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
         }
     </style>
 </head>
-
 <body>
-    <div id="container">
-        <iframe id="meuIframe" src=""></iframe>
+
+    <div class="controls">
+        <textarea id="xmlBruto" placeholder="Cole o XML da nota aqui..."></textarea>
+        <button id="btnGerar">Gerar PDF</button>
     </div>
 
-    <script type="module" async>
-        import { DAV55, DANFe, DANFCe } from './src/index.ts'; // descomente se o arquivo existir
-        //const textarea = document.getElementById("meuTextarea");
-        //textarea.addEventListener("input", onChangeTexto);
+    <div id="container">
+        <iframe id="meuIframe"></iframe>
+    </div>
 
-        DANFe({ xml: await fetch("/DANFE.xml").then(res => res.text()), logo: "http://localhost:5173/logo.jpg", orcamento: true }).then(res => {
-            console.log(res)
-            const blob = new Blob([res], { type: 'application/pdf' }); // <- usa res direto
-            const url = URL.createObjectURL(blob);
-            document.querySelector("#meuIframe").src = url;
+<script type="module">
+        // Se instalou via npm:
+        import { DANFe } from 'node-sped-pdf'; 
+        
+        // Se está editando dentro do próprio projeto clonado:
+        // import { DANFe } from './src/index.ts';
+
+        document.getElementById('btnGerar').addEventListener('click', async () => {
+            const xml = document.getElementById('xmlBruto').value;
+            if (!xml) return;
+
+            try {
+                // A biblioteca espera uma STRING de XML
+                const res = await DANFe({ xml });
+                
+                const blob = new Blob([res], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                document.getElementById('meuIframe').src = url;
+            } catch (err) {
+                console.error(err);
+            }
         });
-
-
     </script>
 </body>
-
 </html>
