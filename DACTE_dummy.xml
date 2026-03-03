@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cteProc xmlns="http://www.portalfiscal.inf.br/cte" versao="3.00">
+    <CTe>
+        <infCte Id="CTe35190608936174000215570110000000021000000000" versao="3.00">
+            <ide>
+                <cUF>35</cUF>
+                <cCT>00000000</cCT>
+                <CFOP>5353</CFOP>
+                <natOp>PRESTACAO DE SERVICO DE TRANSPORTE A ESTABELECIMENTO COMERCIAL</natOp>
+                <mod>57</mod>
+                <serie>11</serie>
+                <nCT>2</nCT>
+                <dhEmi>2019-06-10T11:11:13-03:00</dhEmi>
+                <tpImp>1</tpImp>
+                <tpEmis>1</tpEmis>
+                <cDV>0</cDV>
+                <tpAmb>1</tpAmb>
+                <tpCTe>0</tpCTe>
+                <procEmi>0</procEmi>
+                <verProc>1.0</verProc>
+                <modal>01</modal>
+                <tpServ>0</tpServ>
+                <cMunIni>3500105</cMunIni>
+                <xMunIni>ADAMANTINA</xMunIni>
+                <UFIni>SP</UFIni>
+                <cMunFim>3500105</cMunFim>
+                <xMunFim>ADAMANTINA</xMunFim>
+                <UFFim>SP</UFFim>
+                <retira>1</retira>
+                <toma3>
+                    <toma>0</toma>
+                </toma3>
+            </ide>
+            <emit>
+                <CNPJ>08936171000215</CNPJ>
+                <IE>373167929110</IE>
+                <xNome>Teste Geral Integração</xNome>
+                <enderEmit>
+                    <xLgr>AVENIDA DAMASCENO VIEIRA</xLgr>
+                    <nro>401</nro>
+                    <xCpl>PARTE 30</xCpl>
+                    <xBairro>VILA MASCOTE</xBairro>
+                    <cMun>3550308</cMun>
+                    <xMun>SAO PAULO</xMun>
+                    <CEP>04363040</CEP>
+                    <UF>SP</UF>
+                    <cPais>1058</cPais>
+                    <xPais>BRASIL</xPais>
+                </enderEmit>
+            </emit>
+            <rem>
+                <CNPJ>05530497470</CNPJ>
+                <IE>ISENTO</IE>
+                <xNome>LUIS FERNANDO DE ESPINDOLA CASTRO</xNome>
+                <enderRem>
+                    <xLgr>DOM MANOEL DA COSTA</xLgr>
+                    <nro>257</nro>
+                    <xBairro>MADALENA</xBairro>
+                    <cMun>2611606</cMun>
+                    <xMun>RECIFE</xMun>
+                    <CEP>50710395</CEP>
+                    <UF>PE</UF>
+                    <cPais>1058</cPais>
+                    <xPais>BRASIL</xPais>
+                </enderRem>
+            </rem>
+            <dest>
+                <CNPJ>05530497470</CNPJ>
+                <IE>ISENTO</IE>
+                <xNome>LUIS FERNANDO DE ESPINDOLA CASTRO</xNome>
+                <enderDest>
+                    <xLgr>DOM MANOEL DA COSTA</xLgr>
+                    <nro>257</nro>
+                    <xBairro>MADALENA</xBairro>
+                    <cMun>2611606</cMun>
+                    <xMun>RECIFE</xMun>
+                    <CEP>50710395</CEP>
+                    <UF>PE</UF>
+                    <cPais>1058</cPais>
+                    <xPais>BRASIL</xPais>
+                </enderDest>
+            </dest>
+            <vPrest>
+                <vTPrest>48.00</vTPrest>
+                <vRec>48.00</vRec>
+                <Comp>
+                    <xNome>Frete Peso</xNome>
+                    <vComp>12.00</vComp>
+                </Comp>
+                <Comp>
+                    <xNome>Frete Valor</xNome>
+                    <vComp>12.00</vComp>
+                </Comp>
+                <Comp>
+                    <xNome>Taxa de Coleta</xNome>
+                    <vComp>12.00</vComp>
+                </Comp>
+                <Comp>
+                    <xNome>Taxa de Entrega</xNome>
+                    <vComp>12.00</vComp>
+                </Comp>
+            </vPrest>
+            <imp>
+                <ICMS>
+                    <ICMS45>
+                        <CST>40</CST>
+                    </ICMS45>
+                </ICMS>
+            </imp>
+            <infCTeNorm>
+                <infCarga>
+                    <vCarga>0.00</vCarga>
+                    <proPred>teste</proPred>
+                    <infQ>
+                        <cUnid>01</cUnid>
+                        <tpMed>PESO BRUTO</tpMed>
+                        <qMed>12.0000</qMed>
+                    </infQ>
+                    <infQ>
+                        <cUnid>01</cUnid>
+                        <tpMed>PESO LIQUIDO</tpMed>
+                        <qMed>12.0000</qMed>
+                    </infQ>
+                    <infQ>
+                        <cUnid>02</cUnid>
+                        <tpMed>VOLUME</tpMed>
+                        <qMed>12.0000</qMed>
+                    </infQ>
+                    <infQ>
+                        <cUnid>03</cUnid>
+                        <tpMed>UNIDADES</tpMed>
+                        <qMed>12.0000</qMed>
+                    </infQ>
+                </infCarga>
+                <infDoc>
+                    <infNFe>
+                        <chave>35190608936174000215570110000000021000000001</chave>
+                    </infNFe>
+                </infDoc>
+                <infModal versaoModal="3.00">
+                    <rodo>
+                        <RNTRC>11111111</RNTRC>
+                    </rodo>
+                </infModal>
+            </infCTeNorm>
+            <compl>
+                <xObs>O valor aproximado de tributos incidentes sobre o preço deste serviço é de R$ 0,0</xObs>
+            </compl>
+        </infCte>
+    </CTe>
+    <protCTe versao="3.00">
+        <infProt>
+            <tpAmb>1</tpAmb>
+            <verAplic>1.0</verAplic>
+            <chCTe>35190608936174000215570110000000021000000000</chCTe>
+            <dhRecbto>2019-06-10T11:11:13-03:00</dhRecbto>
+            <nProt>135190000000001</nProt>
+            <digVal>...=</digVal>
+            <cStat>100</cStat>
+            <xMotivo>Autorizado o uso do CT-e</xMotivo>
+        </infProt>
+    </protCTe>
+</cteProc>

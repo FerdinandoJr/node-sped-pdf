@@ -58,6 +58,7 @@ export interface CTeIde {
     modal: string
     tpServ: string
     cMunIni: string
+    indGlobalizado?: string
     xMunIni: string
     UFIni: string
     cMunFim: string
@@ -161,6 +162,7 @@ export interface CTeEndereco {
     xMun: string
     CEP: string
     UF: string
+    fone?: string
     cPais?: string
     xPais?: string
 }
@@ -196,6 +198,7 @@ export interface InfCTeNorm {
             PIN?: string
             dPrev?: string
         }[]
+        infOutros?: any[]
     }
     infModal: {
         "@versaoModal": string
