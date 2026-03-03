@@ -238,6 +238,16 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         });
     }
 
+    // Helper para garantir espaço e trocar de página se necessário
+    async function ensureSpace(h: number) {
+        if (PDF.mtBlock + h > PDF.height - 40) {
+            const newPage = await PDF.addPage();
+            PDF.mtBlock = 20;
+            return newPage;
+        }
+        return PDF.pages[PDF.pages.length - 1];
+    }
+
     // --------------------- BLOCOS DO DACTE ------------------------
 
     async function gerarBlocos() {
@@ -258,7 +268,8 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
     }
 
 
-    async function blocoParticipantes(page = PDF.pages[0]) {
+    async function blocoParticipantes() {
+        const page = await ensureSpace(180);
         const padding = 2;
         const w = PDF.width / 2;
 
@@ -350,7 +361,8 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         await renderBox(cte.infCte.receb, "RECEBEDOR", w, 60);
         PDF.mtBlock += 60;
     }
-    async function blocoTomador(page = PDF.pages[0]) {
+    async function blocoTomador() {
+        const page = await ensureSpace(60);
         const padding = 2;
         const h = 45; // 3 linhas de ~15px
         const w1 = PDF.width * 0.5;
@@ -406,10 +418,11 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         addTXT({ page, text: "Fone:", x: w1 + w2 + padding, y: lY, maxWidth: 20, size: 6, fontStyle: 'negrito' });
         addTXT({ page, text: tomador?.fone || "", x: w1 + w2 + 20 + padding, y: lY - 1, maxWidth: w3 - 25, size: 7, fontStyle: 'normal' });
 
-        PDF.mtBlock += h + 5;
+        PDF.mtBlock += h ;
     }
 
-    async function blocoCarga(page = PDF.pages[0]) {
+    async function blocoCarga() {
+        const page = await ensureSpace(25);
         const padding = 2;
         const h = 25;
         const wCol = PDF.width / 3;
@@ -443,10 +456,11 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         const vCarga = parseFloat(infoCarga?.vCarga || "0").toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         addTXT({ page, text: vCarga, x: wCol * 2 + padding, y: vY, maxWidth: wCol - padding, size: 7, fontStyle: 'normal' });
 
-        PDF.mtBlock += h + 5;
+        PDF.mtBlock += h ;
     }
 
-    async function blocoQuantidades(page = PDF.pages[0]) {
+    async function blocoQuantidades() {
+        const page = await ensureSpace(25);
         const padding = 2;
         const h = 25;
         const wCol = PDF.width / 5;
@@ -522,10 +536,11 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
             addTXT({ page, text: `${val} ${getU(und.cUnid)}`, x: wCol * 4 + padding, y: vY, maxWidth: wCol - padding, size: 7, fontStyle: 'normal' });
         }
 
-        PDF.mtBlock += h + 5;
+        PDF.mtBlock += h ;
     }
 
-    async function blocoComponentesValor(page = PDF.pages[0]) {
+    async function blocoComponentesValor() {
+        const page = await ensureSpace(60);
         const padding = 2;
         const hTitle = 12;
         const hContent = 45;
@@ -607,10 +622,11 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         addTXT({ page, text: "VALOR A RECEBER", x: col4X, y: cY + 28, maxWidth: wCol - padding, size: 6, fontStyle: 'negrito' });
         addTXT({ page, text: `R$ ${fmtV(vPrest?.vRec)}`, x: col4X, y: cY + 36, maxWidth: wCol - padding, size: 8, fontStyle: 'normal' });
 
-        PDF.mtBlock += hTotal + 5;
+        PDF.mtBlock += hTotal ;
     }
 
-    async function blocoImpostos(page = PDF.pages[0]) {
+    async function blocoImpostos() {
+        const page = await ensureSpace(40);
         const padding = 2;
         const hTitle = 12;
         const hContent = 25;
@@ -701,7 +717,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         const vCred = data?.vCred !== undefined ? data.vCred : (data?.vICMSOutraUF !== undefined ? data.vICMSOutraUF : "0.00");
         addTXT({ page, text: fmtV(vCred), x: (wCol * 4) + padding, y: vY, maxWidth: wCol - padding, size: 7, fontStyle: 'normal' });
 
-        PDF.mtBlock += hTotal + 5;
+        PDF.mtBlock += hTotal ;
     }
 
     async function blocoDocumentosOriginais() {
@@ -782,14 +798,38 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
 
     renderHeader(page);
 
-    for (const doc of docs) {
+    let startY = PDF.mtBlock;
+    let itemsInPage = 0;
+
+    const renderBoxAndLines = (p, sY, count) => {
+        const totalH = count * hRow;
+        addRet(p, 0, sY, PDF.width, totalH);
+        
+        // Linhas verticais
+        [w1, w1 + w2, w1 + w2 + w3].forEach(x => {
+            p.drawLine({
+                start: { x: x + 4, y: PDF.height - sY - 4 },
+                end: { x: x + 4, y: PDF.height - sY - totalH - 4 },
+                thickness: 1,
+                color: rgb(0, 0, 0),
+            });
+        });
+    };
+
+    for (let i = 0; i < docs.length; i++) {
+        const doc = docs[i];
+
         if (PDF.mtBlock + hRow > PDF.height - 50) {
+            renderBoxAndLines(page, startY, itemsInPage);
             page = await PDF.addPage();
             PDF.mtBlock = 20;
             renderHeader(page);
+            startY = PDF.mtBlock;
+            itemsInPage = 0;
         }
 
-        addRet(page, 0, PDF.mtBlock, PDF.width, hRow);
+        // addRet removido daqui para tirar as linhas horizontais
+        itemsInPage++;
 
         // Tratamento final para exibição do número (caso ainda venha como number)
         let numeroTexto = doc.numero;
@@ -807,7 +847,11 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         
         PDF.mtBlock += hRow;
     }
-    PDF.mtBlock += 5;
+
+    if (itemsInPage > 0) {
+        renderBoxAndLines(page, startY, itemsInPage);
+    }
+    PDF.mtBlock += 0;
 }
 
 async function blocoTipoCteServico(page = PDF.pages[0]) {
@@ -834,7 +878,7 @@ async function blocoTipoCteServico(page = PDF.pages[0]) {
     addTXT({ page, text: "TIPO DO SERVIÇO", x: w + padding, y: PDF.mtBlock + padding, maxWidth: w - padding*2, size: 6, fontStyle: 'negrito' });
     addTXT({ page, text: tpServStr, x: w + padding, y: PDF.mtBlock + 10, maxWidth: w - padding*2, size: 8, fontStyle: 'normal' });
 
-    PDF.mtBlock += hRow + 5;
+    PDF.mtBlock += hRow ;
 }
 
 async function blocoDadosGerais(page = PDF.pages[0]) {
@@ -846,7 +890,7 @@ async function blocoDadosGerais(page = PDF.pages[0]) {
     // Linha 1
     addRet(page, 0, PDF.mtBlock, w1, hRow);
     addTXT({ page, text: "INDICADOR DO CT-E GLOBALIZADO", x: padding, y: PDF.mtBlock + padding, maxWidth: w1 - padding*2, size: 6, fontStyle: 'negrito' });
-    const isGlobal = cte.infCte.ide.indGlobalizado === "1" ? "(SIM)" : "(NÃO)";
+    const isGlobal = cte.infCte.ide.indGlobalizado === "1" ? "Sim" : "Não";
     addTXT({ page, text: isGlobal, x: padding, y: PDF.mtBlock + 12, maxWidth: w1 - padding*2, size: 9, fontStyle: 'normal' });
 
     addRet(page, w1, PDF.mtBlock, w2, hRow);
@@ -870,10 +914,12 @@ async function blocoDadosGerais(page = PDF.pages[0]) {
     const dhRecbto = protCTe?.infProt?.dhRecbto ? new Date(protCTe.infProt.dhRecbto).toLocaleString('pt-BR') : "";
     addTXT({ page, text: `${nProt} - ${dhRecbto}`, x: w1 + padding, y: PDF.mtBlock + 12, maxWidth: w2 - padding*2, size: 7, fontStyle: 'normal' });
 
-    PDF.mtBlock += hRow + 5;
+    PDF.mtBlock += hRow ;
 }
 
-async function blocoFluxoCarga(page = PDF.pages[PDF.pages.length - 1]) {
+async function blocoFluxoCarga() {
+    const hNeeded = 12 + 40;
+    const page = await ensureSpace(hNeeded);
     const padding = 2;
     const hTitle = 12;
     const hContent = 40; // Altura total do conteúdo (20+20 para a col1)
@@ -926,10 +972,12 @@ async function blocoFluxoCarga(page = PDF.pages[PDF.pages.length - 1]) {
     // Coluna 2: PASSAGEM
     addTXT({ page, text: labelPassagem, x: wCol + padding, y: cY + 2, maxWidth: wCol - padding, size: labelSize, fontStyle: 'negrito' });
 
-    PDF.mtBlock += hTitle + hContent + 5;
+    PDF.mtBlock += hTitle + hContent ;
 }
 
-async function blocoObservacao(page = PDF.pages[PDF.pages.length - 1]) {
+async function blocoObservacao() {
+    const hNeeded = 12 + 60;
+    const page = await ensureSpace(hNeeded);
     const padding = 2;
     const hTitle = 12;
     const hContent = 60; // Altura fixa inicial para observações
@@ -963,10 +1011,12 @@ async function blocoObservacao(page = PDF.pages[PDF.pages.length - 1]) {
         });
     }
 
-    PDF.mtBlock += hTitle + hContent + 5;
+    PDF.mtBlock += hTitle + hContent ;
 }
 
-async function blocoCteGlobalizado(page = PDF.pages[PDF.pages.length - 1]) {
+async function blocoCteGlobalizado() {
+    const hNeeded = 12 + 25;
+    const page = await ensureSpace(hNeeded);
     const padding = 2;
     const hTitle = 12;
     const hContent = 25; 
@@ -997,10 +1047,12 @@ async function blocoCteGlobalizado(page = PDF.pages[PDF.pages.length - 1]) {
         addTXT({ page, text: textOutros, x: padding, y: cY + padding, maxWidth: PDF.width - (padding * 2), size: 6, fontStyle: 'normal' });
     }
 
-    PDF.mtBlock += hTitle + hContent + 5;
+    PDF.mtBlock += hTitle + hContent ;
 }
 
-async function blocoUsoFisco(page = PDF.pages[PDF.pages.length - 1]) {
+async function blocoUsoFisco() {
+    const hNeeded = 12 + 45;
+    const page = await ensureSpace(hNeeded);
     const hTitle = 12;
     const hContent = 45; 
     const wCol1 = PDF.width * 0.70;
@@ -1020,7 +1072,7 @@ async function blocoUsoFisco(page = PDF.pages[PDF.pages.length - 1]) {
     addRet(page, 0, cY, wCol1, hContent);
     addRet(page, wCol1, cY, wCol2, hContent);
 
-    PDF.mtBlock += hTitle + hContent + 5;
+    PDF.mtBlock += hTitle + hContent ;
 }
     
 async function blocoHeaderSuperior(page = PDF.pages[0]) {
@@ -1147,7 +1199,7 @@ async function blocoHeaderSuperior(page = PDF.pages[0]) {
     addTXT({ page, text: "Chave de acesso para consulta de autenticidade no site www.cte.fazenda.gov.br ou da Sefaz", x: w1, y: r4Y + 2, maxWidth: w2, size: 4, align: 'center', fontStyle: 'normal' });
     addTXT({ page, text: idValue.replace(/(\d{4})(?=\d)/g, "$1 "), x: w1, y: r4Y + 10, maxWidth: w2, size: 8, fontStyle: 'negrito', align: 'center' });
 
-    PDF.mtBlock = hBlock + 5;
+    PDF.mtBlock = hBlock;
 }
 
     await gerarBlocos();
