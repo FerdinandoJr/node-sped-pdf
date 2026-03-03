@@ -147,6 +147,7 @@ export interface CTeDest {
     CNPJ?: string
     CPF?: string
     IE?: string
+    ISUF?: string
     xNome: string
     fone?: string
     enderDest: CTeEndereco
@@ -184,6 +185,25 @@ export interface CTeImp {
     infAdFisco?: string
 }
 
+export interface CTeInfNF {
+    nDoc?: string | number
+    dEmi?: string
+    vNF?: string | number
+    [key: string]: unknown
+}
+
+export interface CTeInfNFe {
+    chave: string
+    PIN?: string
+    dPrev?: string
+}
+
+export interface CTeInfOutros {
+    tpDoc?: string
+    descOutros?: string
+    [key: string]: unknown
+}
+
 export interface InfCTeNorm {
     infCarga: {
         vCarga: string
@@ -192,13 +212,9 @@ export interface InfCTeNorm {
         infQ: CTeInfQ | CTeInfQ[]
     }
     infDoc?: {
-        infNF?: any[]
-        infNFe?: {
-            chave: string
-            PIN?: string
-            dPrev?: string
-        }[]
-        infOutros?: any[]
+        infNF?: CTeInfNF | CTeInfNF[]
+        infNFe?: CTeInfNFe | CTeInfNFe[]
+        infOutros?: CTeInfOutros | CTeInfOutros[]
     }
     infModal: {
         "@versaoModal": string
@@ -212,7 +228,11 @@ export interface CTeInfQ {
     cUnid: string
     tpMed: string
     qMed: string
+    qCarga?: string
 }
+
+/** Union de todos os participantes do CTe (remetente, expedidor, recebedor, destinatário) */
+export type CTeParticipant = import('./cte').CTeRem | import('./cte').CTeExped | import('./cte').CTeReceb | import('./cte').CTeDest
 
 export interface CTeInfAdic {
     infAdFisco?: string

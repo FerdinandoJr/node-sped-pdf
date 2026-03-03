@@ -1,19 +1,19 @@
-import { PDFDocument, rgb, StandardFonts, PDFFont } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
 import { XMLParser } from 'fast-xml-parser';
 import JsBarcode from 'jsbarcode';
-import { CTe, CTeRoot } from '../types/cte';
+import { CTe, CTeRoot, CTeParticipant, CTeEndereco, CTeInfNF, CTeInfNFe, CTeInfOutros, ProtCTe } from '../types/cte';
 
 interface PDFStructure {
     doc: PDFDocument;
-    pages: any[];
+    pages: PDFPage[];
     width: number;
     height: number;
     mtBlock: number;
     barCode: string | null;
-    addPage: () => Promise<any>;
+    addPage: () => Promise<PDFPage>;
 }
 
-async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo?: any }): Promise<Uint8Array> {
+async function DACTE(data: { xml: string; logo?: string; consulta?: string; imgDemo?: string }): Promise<Uint8Array> {
     const parser = new XMLParser({ 
         ignoreAttributes: false, 
         attributeNamePrefix: "@",
@@ -22,22 +22,23 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
     const xmlNormalized = data.xml.replace(/\r?\n|\r/g, "");
     const jsonObj: CTeRoot = parser.parse(xmlNormalized);
 
-    function getCaseInsensitiveKey(obj: any, key: string): any {
+    function getCaseInsensitiveKey(obj: object, key: string): unknown {
         if (!obj) return undefined;
+        const record = obj as Record<string, unknown>;
         const lowerKey = key.toLowerCase();
-        const foundKey = Object.keys(obj).find(k => k.toLowerCase() === lowerKey);
-        return foundKey ? obj[foundKey] : undefined;
+        const foundKey = Object.keys(record).find(k => k.toLowerCase() === lowerKey);
+        return foundKey ? record[foundKey] : undefined;
     }
 
     const cteProc = getCaseInsensitiveKey(jsonObj, "cteProc");
-    const cteObj = getCaseInsensitiveKey(jsonObj, "CTe") || (cteProc ? getCaseInsensitiveKey(cteProc, "CTe") : undefined);
+    const cteObj = getCaseInsensitiveKey(jsonObj, "CTe") || (cteProc ? getCaseInsensitiveKey(cteProc as object, "CTe") : undefined);
 
     if (!cteObj) {
         throw new Error("Não foi possível localizar a tag <CTe> no XML fornecido.");
     }
 
-    const cte: CTe = cteObj;
-    const protCTe = cteProc ? getCaseInsensitiveKey(cteProc, "protCTe") : undefined;
+    const cte: CTe = cteObj as CTe;
+    const protCTe: ProtCTe | undefined = cteProc ? getCaseInsensitiveKey(cteProc as object, "protCTe") as ProtCTe : undefined;
 
     var PDF: PDFStructure = {
         doc: await PDFDocument.create(),
@@ -46,22 +47,22 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         height: 0,
         mtBlock: 0,
         barCode: null,
-        addPage: async () => {}
+        addPage: async () => PDF.doc.addPage()
     },
         consulta = typeof data.consulta != "undefined" ? parser.parse(data.consulta) : {},
         logo = data.logo,
         imgDemo = data.imgDemo;
     
     // Identificação do Tomador
-    let tomador: any = null;
+    let tomador: CTeParticipant | null = null;
     if (cte.infCte.ide.toma3) {
         const t3 = cte.infCte.ide.toma3.toma;
-        if (String(t3) === "0") tomador = cte.infCte.rem;
-        if (String(t3) === "1") tomador = cte.infCte.exped;
-        if (String(t3) === "2") tomador = cte.infCte.receb;
-        if (String(t3) === "3") tomador = cte.infCte.dest;
+        if (String(t3) === "0") tomador = cte.infCte.rem ?? null;
+        if (String(t3) === "1") tomador = cte.infCte.exped ?? null;
+        if (String(t3) === "2") tomador = cte.infCte.receb ?? null;
+        if (String(t3) === "3") tomador = cte.infCte.dest ?? null;
     } else if (cte.infCte.ide.toma4) {
-        tomador = cte.infCte.ide.toma4;
+        tomador = cte.infCte.ide.toma4 as unknown as CTeParticipant;
     }
 
     // Configuração do PDF
@@ -77,7 +78,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
 
     // ------------------------ FUNÇÕES AUXILIARES ------------------------------
 
-    async function addRet(page: any, x: number, y: number, w: number, h: number) {
+    async function addRet(page: PDFPage, x: number, y: number, w: number, h: number) {
         page.drawRectangle({
             x: x + 4,
             y: (PDF.height - h) - (y + 4),
@@ -101,8 +102,8 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         cacl = false,
         opacity = 1
     }: {
-        page: any;
-        text: any;
+        page: PDFPage;
+        text: string | number;
         x: number;
         y: number;
         opacity?: number;
@@ -177,7 +178,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         return lines;
     }
 
-    function embCNPJCPF(valor: any) {
+    function embCNPJCPF(valor: string | number | null | undefined): string {
         if (!valor) return "";
         const str = String(valor);
         const numeros = str.replace(/\D/g, '');
@@ -208,7 +209,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         return PDF.barCode!;
     }
 
-    async function addIMG({ page, img, x, y, w, h }: { page: any; img: any; x: number; y: number; w: number; h: number }) {
+    async function addIMG({ page, img, x, y, w, h }: { page: PDFPage; img: string; x: number; y: number; w: number; h: number }) {
         if (img) {
             const isBase64 = typeof img === 'string' && img.startsWith('data:image');
             let base64 = img;
@@ -273,7 +274,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         const padding = 2;
         const w = PDF.width / 2;
 
-        const renderBox = async (participant: any, label: string, x: number, height: number) => {
+        const renderBox = async (participant: CTeParticipant | null | undefined, label: string, x: number, height: number) => {
             addRet(page, x, PDF.mtBlock, w, height);
             const mid = w / 2;
             
@@ -287,7 +288,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
             }
 
             lY += 12;
-            const end = participant?.enderRem || participant?.enderDest || participant?.enderExped || participant?.enderReceb || {} as any;
+            const end: Partial<CTeEndereco> = (participant && ('enderRem' in participant ? participant.enderRem : 'enderDest' in participant ? participant.enderDest : 'enderExped' in participant ? participant.enderExped : 'enderReceb' in participant ? participant.enderReceb : undefined)) ?? {};
             
             // Endereço (Otimizado com rótulo curto e fonte dinâmica)
             addTXT({ page, text: "End.:", x: x + padding, y: lY, maxWidth: 25, size: 5, fontStyle: 'negrito' });
@@ -382,7 +383,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         });
 
         let lY = PDF.mtBlock + padding;
-        const end = tomador?.enderToma || tomador?.enderRem || tomador?.enderDest || tomador?.enderExped || tomador?.enderReceb || {} as any;
+        const end: Partial<CTeEndereco> = (tomador && ('enderToma' in tomador ? (tomador as {enderToma?: CTeEndereco}).enderToma : 'enderRem' in tomador ? (tomador as {enderRem?: CTeEndereco}).enderRem : 'enderDest' in tomador ? (tomador as {enderDest?: CTeEndereco}).enderDest : 'enderExped' in tomador ? (tomador as {enderExped?: CTeEndereco}).enderExped : 'enderReceb' in tomador ? (tomador as {enderReceb?: CTeEndereco}).enderReceb : undefined)) ?? {};
 
         // LINHA 1: Tomador | Município | CEP
         addTXT({ page, text: "TOMADOR:", x: padding, y: lY, maxWidth: 35, size: 6, fontStyle: 'negrito' });
@@ -469,9 +470,9 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         const qs = Array.isArray(qsRaw) ? qsRaw : qsRaw ? [qsRaw] : [];
 
         // Mapeador de unidades (01 -> KG, etc)
-        const getU = (code: any) => {
-            const map: any = { "00": "M3", "01": "KG", "1": "KG", "02": "TON", "2": "TON", "03": "UN", "3": "UN", "04": "LTS", "4": "LTS", "05": "M3", "5": "M3" };
-            return map[String(code).padStart(2, '0')] || map[String(code)] || code || "";
+        const getU = (code: string | number): string => {
+            const map: Record<string, string> = { "00": "M3", "01": "KG", "1": "KG", "02": "TON", "2": "TON", "03": "UN", "3": "UN", "04": "LTS", "4": "LTS", "05": "M3", "5": "M3" };
+            return map[String(code).padStart(2, '0')] || map[String(code)] || String(code) || "";
         };
 
         addRet(page, 0, PDF.mtBlock, PDF.width, h);
@@ -585,7 +586,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
             color: rgb(0, 0, 0),
         });
 
-        const fmtV = (v: any) => parseFloat(v || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        const fmtV = (v: string | number | null | undefined): string => parseFloat(String(v || '0')).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
         // Coluna 1: Itens específicos
         const col1Labels = ["Frete Peso", "Frete Valor", "Taxa de Coleta", "Taxa de Entrega"];
@@ -636,14 +637,14 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         const imp = cte.infCte.imp;
         const icms = imp?.ICMS;
         
-        let data: any = {};
+        let data: Record<string, string> = {};
         if (icms) {
-            const dataKey = Object.keys(icms).find(k => k.startsWith('ICMS') && k !== 'ICMS');
-            data = dataKey ? icms[dataKey] : icms;
+            const dataKey = Object.keys(icms as Record<string, unknown>).find(k => k.startsWith('ICMS') && k !== 'ICMS');
+            data = (dataKey ? (icms as Record<string, Record<string,string>>)[dataKey] : icms) as Record<string, string>;
         }
 
-        const getDesc = (code: string) => {
-            const map: any = {
+        const getDesc = (code: string): string => {
+            const map: Record<string, string> = {
                 "00": "Tributação normal ICMS",
                 "20": "Tributação com redução de BC",
                 "40": "ICMS isento",
@@ -687,7 +688,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
             });
         });
 
-        const fmtV = (v: any) => parseFloat(v || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        const fmtV = (v: string | number | null | undefined): string => parseFloat(String(v || '0')).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
         const lY = cY + padding;
         const vY = lY + 10;
 
@@ -733,11 +734,12 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
     const infDoc = cte.infCte.infCTeNorm?.infDoc;
     if (!infDoc) return;
 
-    const docs = [];
+    interface DocRow { tipo: string; numero: string; data: string; valor: string | number; }
+    const docs: DocRow[] = [];
     const dhEmi = cte.infCte.ide.dhEmi; // Data do CTe
     
     // Formata data ISO para DD/MM/AAAA
-    const fmtDate = (iso) => {
+    const fmtDate = (iso: string | undefined): string => {
         if (!iso) return '';
         // Pega apenas a parte da data para evitar problemas de fuso horário
         const datePart = iso.split('T')[0];
@@ -750,8 +752,9 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
 
     // 1. Processa Notas de Papel (Modelo 1/1A)
     // Tenta pegar o valor individual (vNF) se existir, senão usa 0
-    const nfs = Array.isArray(infDoc.infNF) ? infDoc.infNF : infDoc.infNF ? [infDoc.infNF] : [];
-    nfs.forEach((n) => {
+    const nfsRaw = infDoc.infNF;
+    const nfs: CTeInfNF[] = Array.isArray(nfsRaw) ? nfsRaw : nfsRaw ? [nfsRaw] : [];
+    nfs.forEach((n: CTeInfNF) => {
         docs.push({
             tipo: 'NF',
             // Garante string para evitar notação científica
@@ -764,8 +767,9 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
 
     // 2. Processa Notas Eletrônicas (NFe - Apenas Chave)
     // O XML do CTe NÃO tem o valor individual da NFe. Iniciamos com 0.
-    const nfes = Array.isArray(infDoc.infNFe) ? infDoc.infNFe : infDoc.infNFe ? [infDoc.infNFe] : [];
-    nfes.forEach((n) => {
+    const nfesRaw = infDoc.infNFe;
+    const nfes: CTeInfNFe[] = Array.isArray(nfesRaw) ? nfesRaw : nfesRaw ? [nfesRaw] : [];
+    nfes.forEach((n: CTeInfNFe) => {
         docs.push({
             tipo: 'NFe',
             // A chave deve ser tratada como string pura
@@ -784,7 +788,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         docs[0].valor = vCargaTotal;
     }
 
-    const renderHeader = (p) => {
+    const renderHeader = (p: PDFPage) => {
         addRet(p, 0, PDF.mtBlock, PDF.width, hHeader);
         addTXT({ page: p, text: "DOCUMENTOS ORIGINÁRIOS", x: 0, y: PDF.mtBlock + 3, maxWidth: PDF.width, size: 7, fontStyle: 'negrito', align: 'center' });
         PDF.mtBlock += hHeader;
@@ -801,7 +805,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
     let startY = PDF.mtBlock;
     let itemsInPage = 0;
 
-    const renderBoxAndLines = (p, sY, count) => {
+    const renderBoxAndLines = (p: PDFPage, sY: number, count: number) => {
         const totalH = count * hRow;
         addRet(p, 0, sY, PDF.width, totalH);
         
@@ -832,9 +836,9 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         itemsInPage++;
 
         // Tratamento final para exibição do número (caso ainda venha como number)
-        let numeroTexto = doc.numero;
+        let numeroTexto: string = doc.numero;
         if (typeof doc.numero === 'number') {
-            numeroTexto = doc.numero.toLocaleString('pt-BR', { useGrouping: false });
+            numeroTexto = (doc.numero as number).toLocaleString('pt-BR', { useGrouping: false });
         }
 
         addTXT({ page, text: doc.tipo, x: padding, y: PDF.mtBlock + 4, maxWidth: w1, size: 7, fontStyle: 'normal' });
@@ -843,7 +847,7 @@ async function DACTE(data: { xml: string; logo?: any; consulta?: string; imgDemo
         addTXT({ page, text: doc.data, x: w1 + w2 + padding, y: PDF.mtBlock + 4, maxWidth: w3, size: 7, fontStyle: 'normal' });
         
         // Exibe o valor formatado. Se for 0, aparecerá "0,00" (o que é correto tecnicamente quando não se tem a informação)
-        addTXT({ page, text: parseFloat(doc.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 }), x: w1 + w2 + w3 + padding, y: PDF.mtBlock + 4, maxWidth: w4, size: 7, fontStyle: 'normal' });
+        addTXT({ page, text: parseFloat(String(doc.valor)).toLocaleString('pt-BR', { minimumFractionDigits: 2 }), x: w1 + w2 + w3 + padding, y: PDF.mtBlock + 4, maxWidth: w4, size: 7, fontStyle: 'normal' });
         
         PDF.mtBlock += hRow;
     }
@@ -1041,8 +1045,8 @@ async function blocoCteGlobalizado() {
     
     if (outros) {
         let textOutros = "";
-        const listaOutros = Array.isArray(outros) ? outros : [outros];
-        textOutros = listaOutros.map((o: any) => `${o.tpDoc || ''} ${o.descOutros || ''}`).join(" | ");
+        const listaOutros: CTeInfOutros[] = Array.isArray(outros) ? outros : [outros];
+        textOutros = listaOutros.map((o: CTeInfOutros) => `${o.tpDoc || ''} ${o.descOutros || ''}`).join(" | ");
         
         addTXT({ page, text: textOutros, x: padding, y: cY + padding, maxWidth: PDF.width - (padding * 2), size: 6, fontStyle: 'normal' });
     }
@@ -1114,7 +1118,7 @@ async function blocoHeaderSuperior(page = PDF.pages[0]) {
     addTXT({ page, text: cte.infCte.emit.IE || "", x: txtX1 + wDoc + 10, y: yPos - 1, maxWidth: wDoc - 10, size: 7, fontStyle: 'negrito' });
     yPos += 10;
 
-    const end = cte.infCte.emit.enderEmit || {} as any;
+    const end: Partial<CTeEndereco> = cte.infCte.emit.enderEmit ?? {};
     // ENDEREÇO
     addTXT({ page, text: "ENDEREÇO:", x: txtX1, y: yPos, maxWidth: 45, size: 5, fontStyle: 'normal' });
     addTXT({ page, text: end.xLgr || "", x: txtX1 + 45, y: yPos - 1, maxWidth: w1 - txtX1 - 45 - margin, size: 7, fontStyle: 'negrito' });
@@ -1163,7 +1167,7 @@ async function blocoHeaderSuperior(page = PDF.pages[0]) {
     
     addRet(page, w1 + wDACTE, 0, wModal, gridY);
     addTXT({ page, text: "MODAL", x: w1 + wDACTE, y: margin + 2, maxWidth: wModal, size: 6, fontStyle: 'negrito', align: 'center' });
-    const ide = cte.infCte.ide || {} as any;
+    const ide = cte.infCte.ide;
     const modais: Record<string, string> = { "01": "RODOVIÁRIO", "02": "AÉREO", "03": "AQUAVIÁRIO", "04": "FERROVIÁRIO", "05": "DUTOVIÁRIO", "06": "MULTIMODAL" };
     const modalType = ide.modal ? modais[String(ide.modal).padStart(2, '0')] || ide.modal : "";
     addTXT({ page, text: modalType, x: w1 + wDACTE, y: 18, maxWidth: wModal, size: 8, fontStyle: 'negrito', align: 'center' });
@@ -1174,7 +1178,7 @@ async function blocoHeaderSuperior(page = PDF.pages[0]) {
     const cWs = [0.10, 0.10, 0.20, 0.10, 0.30, 0.20].map(p => p * w2);
     const labels = ["MODELO", "SÉRIE", "NÚMERO", "FL", "DATA E HORA DE EMISSÃO", "INSC. SUFRAMA DESTINATÁRIO"];
     const dhEmi = ide.dhEmi ? new Date(ide.dhEmi).toLocaleString('pt-BR') : "";
-    const values = ["57", ide.serie || "", ide.nCT || "", "1/1", dhEmi, (cte.infCte.dest as any)?.ISUF || ""];
+    const values = ["57", ide.serie || "", ide.nCT || "", "1/1", dhEmi, cte.infCte.dest?.ISUF || ""];
     
     let curX = w1;
     labels.forEach((l, i) => {
